@@ -6,6 +6,10 @@ package rinde.sim.core;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ConcurrentModificationException;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.commons.math.random.MersenneTwister;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,6 +51,31 @@ public class SimulatorTest {
 
 	}
 
+	/**
+	 * This test might, in some rare cases succeed when ConcurrentModificationException is still possible.
+	 * Rerun tests a few times to be sure.
+	 */
+	@Test
+	public void testTickConcurrency(){
+		TickListenerImpl normal = new TickListenerImpl();
+		Set<TickListener> thread = new HashSet<TickListener>();
+		simulator.addTickListener(normal);
+		try{
+			for(int i=0; i<1500; i++){
+				thread.add(new TickListenerImpl());
+			}
+			TickAdder ta = new TickAdder(thread, simulator);
+			Thread toRun =new Thread(ta);
+
+			toRun.start();
+			for(int i=0; i<1500; i++){
+				simulator.tick();
+			}
+		}catch(ConcurrentModificationException e){
+			assertTrue(false);
+		}
+	}
+
 	class TickListenerImpl implements TickListener {
 		private int count = 0;
 		private long execTime;
@@ -61,7 +90,7 @@ public class SimulatorTest {
 		public long getExecTime() {
 			return execTime;
 		}
-		
+
 		public long getAfterExecTime() {
 			return afterTime;
 		}
@@ -74,6 +103,22 @@ public class SimulatorTest {
 		public void afterTick(long currentTime, long timeStep) {
 			afterTime = System.nanoTime();
 		}
+	}
+
+	class TickAdder implements Runnable{
+		Set<TickListener> tl;
+		Simulator simu;
+		TickAdder(Set<TickListener> t,Simulator sim){
+			tl = t;
+			simu = sim;
+		}
+		@Override
+		public void run() {
+			for(TickListener t: tl){
+				simu.addTickListener(t);
+			}				
+		}
+
 	}
 
 }

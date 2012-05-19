@@ -3,12 +3,11 @@
  */
 package rinde.sim.core;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.math.random.RandomGenerator;
@@ -62,8 +61,9 @@ public class Simulator implements SimulatorAPI {
 	 */
 	public Simulator(RandomGenerator r, long timeStep) {
 		this.timeStep = timeStep;
-		tickListeners = Collections.synchronizedSet(new LinkedHashSet<TickListener>());
-
+		//use copyonwritearrayset for frequent read and rare insert operations.
+		tickListeners = new CopyOnWriteArraySet<TickListener>();
+		tickListeners =  new LinkedHashSet<TickListener>();
 		unregisterLock = new ReentrantLock();
 		toUnregister = new LinkedHashSet<Object>();
 		
@@ -200,10 +200,8 @@ public class Simulator implements SimulatorAPI {
 		// this also means that adding or removing a TickListener is 
 		// effectively executed after a 'tick'
 
-		List<TickListener> localCopy = new ArrayList<TickListener>();
 		long timeS = System.currentTimeMillis();
-		localCopy.addAll(tickListeners);
-		for (TickListener t : localCopy) {
+		for (TickListener t : tickListeners) {
 			t.tick(time, timeStep);
 		}
 		if(LOGGER.isDebugEnabled()) {
