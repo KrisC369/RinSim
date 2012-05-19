@@ -63,7 +63,6 @@ public class Simulator implements SimulatorAPI {
 		this.timeStep = timeStep;
 		//use copyonwritearrayset for frequent read and rare insert operations.
 		tickListeners = new CopyOnWriteArraySet<TickListener>();
-		tickListeners =  new LinkedHashSet<TickListener>();
 		unregisterLock = new ReentrantLock();
 		toUnregister = new LinkedHashSet<Object>();
 		
